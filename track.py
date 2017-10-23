@@ -14,6 +14,8 @@ cap = cv2.VideoCapture(0)
 # dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_ORIGINAL)
 dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_50)
 
+ws = None
+
 def run():
   while(True):
     # Capture frame-by-frame
@@ -51,8 +53,6 @@ def run():
       quit()
   
 
-global ws
-
 def on_message(ws, message):
   print(message)
 
@@ -70,6 +70,7 @@ def on_open(ws):
 
 def start():
   websocket.enableTrace(True)
+  global ws
   ws = websocket.WebSocketApp("ws://localhost:5000/bot-updates",
                             on_message = on_message,
                             on_error = on_error,
