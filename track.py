@@ -50,7 +50,8 @@ def run():
       # When everything done, release the capture
       cap.release()
       cv2.destroyAllWindows()
-      quit()
+      import sys
+      sys.exit()
   
 
 def on_message(ws, message):
