@@ -3,6 +3,7 @@ import cv2
 import json
 import websocket
 import thread
+import time
 
 url = "udp://localhost:2000"
 # cap = cv2.VideoCapture(url)
@@ -17,14 +18,14 @@ def run():
   while(True):
     # Capture frame-by-frame
     ret, frame = cap.read()
-    print (frame.shape)
+    # print (frame.shape)
     h, w, _ = frame.shape
 
     # Our operations on the frame come here
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     res = cv2.aruco.detectMarkers(gray,dictionary)
-    print(res[0],res[1],len(res[2]))
+    # print(res[0],res[1],len(res[2]))
     if len(res[0]) > 0:
       data = {
         'updates': 
@@ -36,7 +37,7 @@ def run():
           ],
         'size': { 'width': w, 'height': h } # for aspect ratio calculation
       }
-      print(data)
+      # print(data)
       ws.send(json.dumps(data))
 
     if len(res[0]) > 0:
@@ -53,22 +54,28 @@ def run():
 global ws
 
 def on_message(ws, message):
-    print(message)
+  print(message)
 
 def on_error(ws, error):
-    print(error)
+  print(error)
 
 def on_close(ws):
-    print("### closed ###")
+  print("### closed ###")
+  print("### trying to reconnect ###")
+  time.sleep(3)
+  start()
 
 def on_open(ws):
-    run()
-    
+  run()
+
+def start():
+  websocket.enableTrace(True)
+  ws = websocket.WebSocketApp("ws://localhost:5000/bot-updates",
+                            on_message = on_message,
+                            on_error = on_error,
+                            on_close = on_close)
+  ws.on_open = on_open
+  ws.run_forever()
+
 if __name__ == "__main__":
-    websocket.enableTrace(True)
-    ws = websocket.WebSocketApp("ws://localhost:5000/bot-updates",
-                              on_message = on_message,
-                              on_error = on_error,
-                              on_close = on_close)
-    ws.on_open = on_open
-    ws.run_forever()
+  start()
