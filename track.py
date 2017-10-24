@@ -8,6 +8,8 @@ import time
 url = "udp://localhost:2000"
 # cap = cv2.VideoCapture(url)
 cap = cv2.VideoCapture(0)
+cap.set(3, 1280)
+cap.set(4, 960)
 
 # dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_1000)
 # dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
