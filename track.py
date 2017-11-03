@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 import json
 import websocket
-import thread
 import time
 
 url = "udp://localhost:2000"
@@ -57,7 +56,8 @@ def run():
   
 
 def on_message(ws, message):
-  print(message)
+  pass
+  # print(message)
 
 def on_error(ws, error):
   print(error)
@@ -69,10 +69,11 @@ def on_close(ws):
   start()
 
 def on_open(ws):
+  print("### connected ###")
   run()
 
 def start():
-  websocket.enableTrace(True)
+  # websocket.enableTrace(True)
   global ws
   ws = websocket.WebSocketApp("ws://localhost:5000/bot-updates",
                             on_message = on_message,
