@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-d = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_50)
+d = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 
 i = 0
 def next():

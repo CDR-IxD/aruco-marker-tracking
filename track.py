@@ -6,14 +6,14 @@ import time
 
 url = "udp://localhost:2000"
 # cap = cv2.VideoCapture(url)
-cap = cv2.VideoCapture(0)
-cap.set(3, 1280)
-cap.set(4, 960)
+cap = cv2.VideoCapture(1)
+cap.set(3, 960)
+cap.set(4, 720)
 
 # dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_1000)
 # dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 # dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_ORIGINAL)
-dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_50)
+dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 
 ws = None
 
@@ -41,7 +41,8 @@ def run():
         'size': { 'width': w, 'height': h } # for aspect ratio calculation
       }
       # print(data)
-      ws.send(json.dumps(data))
+      if ws is not None:
+        ws.send(json.dumps(data))
 
     if len(res[0]) > 0:
       cv2.aruco.drawDetectedMarkers(gray,res[0],res[1])
@@ -84,4 +85,5 @@ def start():
 
 if __name__ == "__main__":
   # this might work?
-  start()
+  # start()
+  run()
