@@ -3,12 +3,23 @@ import cv2
 import json
 import websocket
 import time
+import math
 
-url = "udp://localhost:2000"
+# url = "udp://localhost:2000"
 # cap = cv2.VideoCapture(url)
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(3, 960)
 cap.set(4, 720)
+
+BASE_DIAMETER = 241 # 9.5 inches (24 cm?)
+
+# FLOOR_TO_FIDUCIAL_HEIGHT = 1524 # mm
+FLOOR_FIDUCIAL_EDGE_SIZE = 203 # 8 inches (20.3 cm?)
+TRACK_FIDUCIAL_EDGE_SIZE = 137 # 5.4 inches (13.7 cm?)
+OFFSET_ALONG = 169
+OFFSET_ACROSS = 253
+
+floor_scale = 1
 
 # dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_1000)
 # dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
@@ -16,6 +27,9 @@ cap.set(4, 720)
 dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 
 ws = None
+
+def dist(x, y):
+  return np.linalg.norm(y-x)
 
 def run():
   while(True):
@@ -29,23 +43,56 @@ def run():
 
     res = cv2.aruco.detectMarkers(gray,dictionary)
     # print(res[0],res[1],len(res[2]))
-    if len(res[0]) > 0:
-      data = {
-        'updates': 
-          [
-            {
-              'id': int(index[0]), 
-              'location': [{'x': float(pt[0]/w), 'y': float(pt[1]/h)} for pt in fid]
-            } for (fid, index) in zip(res[0][0], res[1])
-          ],
-        'size': { 'width': w, 'height': h } # for aspect ratio calculation
-      }
-      # print(data)
-      if ws is not None:
-        ws.send(json.dumps(data))
-
+    
     if len(res[0]) > 0:
       cv2.aruco.drawDetectedMarkers(gray,res[0],res[1])
+      data = {
+        'updates': [],
+        'size': { 'width': w, 'height': h } # for aspect ratio calculation
+      }
+
+      # print(res[0], res[1])
+
+      for (fids, index) in zip(res[0], res[1]):
+        fid = fids[0]
+        if int(index[0]) == 0: # floor fiducial!
+          # print("found floor!")
+          d = dist(fid[0], fid[1])
+          global floor_scale
+          floor_scale = d / FLOOR_FIDUCIAL_EDGE_SIZE
+        else:
+          # print("found non-floor!")
+          center = sum(fid)/4.0
+          front = (fid[0]+fid[1])/2.0
+          data['updates'].append({
+            'id': int(index[0]), 
+            'fiducialLocation': [[pt[0], pt[1]] for pt in fid],
+            'fiducialScale': dist(fid[0], fid[1]) / TRACK_FIDUCIAL_EDGE_SIZE,
+            'angle': math.atan2(front[1]-center[1], front[0]-center[0])
+          })
+      for update in data['updates']:
+        Sf = update['fiducialScale']
+        Sr = floor_scale
+        angle = update['angle']
+        
+        x_factor = OFFSET_ALONG * math.cos(angle) - OFFSET_ACROSS * math.sin(angle)
+        y_factor = OFFSET_ALONG * math.sin(angle) + OFFSET_ACROSS * math.cos(angle)
+        
+        robotLocation = [(
+          int((float(pt[0]-w/2) / Sf + x_factor) * Sr + w/2), 
+          int((float(pt[1]-h/2) / Sf + y_factor) * Sr + h/2)
+        ) for pt in update['fiducialLocation'] ]
+                                    
+        update['robotLocation'] = robotLocation
+        update['location'] = [{ 'x': pt[0]/w, 'y': pt[1]/h } for pt in robotLocation]
+
+        for i in [(1,2), (2,3), (3,0)]:
+          cv2.line(gray, robotLocation[i[0]], robotLocation[i[1]], 255, 3)
+
+      # print(data)
+      if len(data['updates']) > 0 and ws is not None:
+        ws.send(json.dumps(data))
+
     # Display the resulting frame
     cv2.imshow('frame',gray)
     if cv2.waitKey(1) & 0xFF == ord('q'):
