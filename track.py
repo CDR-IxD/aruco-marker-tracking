@@ -56,7 +56,7 @@ def run():
     # Capture frame-by-frame
     ret, frame = cap.read()
     
-    print (frame.shape)
+    # print (frame.shape)
     h, w, _ = frame.shape
 
     # Our operations on the frame come here
@@ -117,7 +117,7 @@ def run():
 
     # Display the resulting frame
     cv2.imshow('frame',gray)
-    print("shown!")
+    # print("shown!")
     if cv2.waitKey(1) & 0xFF == ord('q'):
       # When everything done, release the capture
       cap.release()
