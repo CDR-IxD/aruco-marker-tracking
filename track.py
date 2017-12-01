@@ -10,14 +10,14 @@ logging.basicConfig()
 # url = "udp://localhost:2000"
 # cap = cv2.VideoCapture(url)
 cap = cv2.VideoCapture(0)
-cap.set(3, 960)
-cap.set(4, 720)
+cap.set(3, 1920)
+cap.set(4, 1200)
 
 BASE_DIAMETER = 241 # 9.5 inches (24 cm?)
 
 # FLOOR_TO_FIDUCIAL_HEIGHT = 1524 # mm
-FLOOR_FIDUCIAL_EDGE_SIZE = 201 # 8 inches (20.3 cm?)
-TRACK_FIDUCIAL_EDGE_SIZE = 201 # 124 # 4.875 inches (13.7 cm?)
+FLOOR_FIDUCIAL_EDGE_SIZE = 190 # 7.5 inches 
+TRACK_FIDUCIAL_EDGE_SIZE = 190 # 124 # 4.875 inches (13.7 cm?)
 OFFSET_ALONG = 0 #-279 #169
 OFFSET_ACROSS = 0 #-190 #253
 
@@ -40,14 +40,15 @@ def update_ACROSS(x):
   global OFFSET_ACROSS
   OFFSET_ACROSS = -x
 
-camera_matrix = np.array([
-  [857.4829, 0.0, 968.0622],
-  [0.0, 876.718, 556.3714],
-  [0.0, 0.0, 1.0]])
-dist_coeffs = np.array([[-2.57614e-01, 8.77087e-02, -2.569708e-04, -5.933904e-04, -1.5219409e-02]])
+# camera_matrix = np.array([
+#   [857.4829, 0.0, 968.0622],
+#   [0.0, 876.718, 556.3714],
+#   [0.0, 0.0, 1.0]])
+# dist_coeffs = np.array([[-2.57614e-01, 8.77087e-02, -2.569708e-04, -5.933904e-04, -1.5219409e-02]])
 
 def run():
-  cv2.namedWindow('frame')
+  cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
+  cv2.resizeWindow('frame', 640, 480)
 
   cv2.createTrackbar('X', 'frame', OFFSET_ALONG, 1000, update_ALONG)
   cv2.createTrackbar('Y', 'frame', OFFSET_ACROSS, 1000, update_ACROSS)
@@ -79,9 +80,10 @@ def run():
         fid = fids[0]
         if int(index[0]) == 0: # floor fiducial!
           # print("found floor!")
-          d = dist(fid[0], fid[1])
+          d = sum([dist(fid[a], fid[b]) for (a, b) in zip((0,1,2,3), (1,2,3,0))])/4 # average of all four edge lengths
           global floor_scale
           floor_scale = d / FLOOR_FIDUCIAL_EDGE_SIZE
+          data['floorFiducial'] = [[int(pt[0]), int(pt[1])] for pt in fid]
         else:
           # print("found non-floor!")
           center = sum(fid)/4.0
@@ -92,6 +94,9 @@ def run():
             'fiducialScale': dist(fid[0], fid[1]) / TRACK_FIDUCIAL_EDGE_SIZE,
             'angle': math.atan2(front[1]-center[1], front[0]-center[0])
           })
+      
+      data['floorScale'] = floor_scale
+      
       for update in data['updates']:
         Sf = update['fiducialScale']
         Sr = floor_scale
@@ -114,6 +119,7 @@ def run():
       # print(data)
       if len(data['updates']) > 0 and ws is not None:
         ws.send(json.dumps(data))
+      
 
     # Display the resulting frame
     cv2.imshow('frame',gray)
