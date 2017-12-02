@@ -7,6 +7,8 @@ import math
 import logging
 logging.basicConfig()
 
+MAX_BOTS=5
+
 # url = "udp://localhost:2000"
 # cap = cv2.VideoCapture(url)
 cap = cv2.VideoCapture(0)
@@ -84,7 +86,7 @@ def run():
           global floor_scale
           floor_scale = d / FLOOR_FIDUCIAL_EDGE_SIZE
           data['floorFiducial'] = [[int(pt[0]), int(pt[1])] for pt in fid]
-        else:
+        elif int(index[0]) <= MAX_BOTS:
           # print("found non-floor!")
           center = sum(fid)/4.0
           front = (fid[0]+fid[1])/2.0
