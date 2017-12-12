@@ -13,7 +13,9 @@ MAX_BOTS=5
 # cap = cv2.VideoCapture(url)
 cap = cv2.VideoCapture(0)
 cap.set(3, 1920)
-cap.set(4, 1200)
+cap.set(4, 1080)
+
+USE_UNDISTORT = False
 
 BASE_DIAMETER = 241 # 9.5 inches (24 cm?)
 
@@ -42,11 +44,11 @@ def update_ACROSS(x):
   global OFFSET_ACROSS
   OFFSET_ACROSS = -x
 
-# camera_matrix = np.array([
-#   [857.4829, 0.0, 968.0622],
-#   [0.0, 876.718, 556.3714],
-#   [0.0, 0.0, 1.0]])
-# dist_coeffs = np.array([[-2.57614e-01, 8.77087e-02, -2.569708e-04, -5.933904e-04, -1.5219409e-02]])
+camera_matrix = np.array([
+  [900, 0.0, 959.5],
+  [0.0, 900, 539.5],
+  [0.0, 0.0, 1.0]])
+dist_coeffs = np.array([[-0.25, 0.06, 0, 0, 0]])
 
 def run():
   cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
@@ -64,7 +66,7 @@ def run():
 
     # Our operations on the frame come here
     gray_d = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    gray = gray_d # cv2.undistort(gray_d, camera_matrix, dist_coeffs)
+    gray = cv2.undistort(gray_d, camera_matrix, dist_coeffs) if USE_UNDISTORT else gray_d
     
     res = cv2.aruco.detectMarkers(gray,dictionary)
     # print(res[0],res[1],len(res[2]))
@@ -90,10 +92,11 @@ def run():
           # print("found non-floor!")
           center = sum(fid)/4.0
           front = (fid[0]+fid[1])/2.0
+          d = sum([dist(fid[a], fid[b]) for (a, b) in zip((0,1,2,3), (1,2,3,0))])/4
           data['updates'].append({
             'id': int(index[0]), 
             'fiducialLocation': [[int(pt[0]), int(pt[1])] for pt in fid],
-            'fiducialScale': dist(fid[0], fid[1]) / TRACK_FIDUCIAL_EDGE_SIZE,
+            'fiducialScale': d / TRACK_FIDUCIAL_EDGE_SIZE,
             'angle': math.atan2(front[1]-center[1], front[0]-center[0])
           })
       
@@ -107,10 +110,10 @@ def run():
         x_factor = OFFSET_ALONG * math.cos(angle) - OFFSET_ACROSS * math.sin(angle)
         y_factor = OFFSET_ALONG * math.sin(angle) + OFFSET_ACROSS * math.cos(angle)
         
-        robotLocation = [(
+        robotLocation = (update['fiducialLocation']) if not USE_UNDISTORT else [(
           int((float(pt[0]-w/2) / Sf + x_factor) * Sr + w/2), 
           int((float(pt[1]-h/2) / Sf + y_factor) * Sr + h/2)
-        ) for pt in update['fiducialLocation'] ]
+        ) for pt in update['fiducialLocation'] ] 
                                     
         update['robotLocation'] = robotLocation
         update['location'] = [{ 'x': float(pt[0])/w, 'y': float(pt[1])/h } for pt in robotLocation]
