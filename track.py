@@ -110,7 +110,7 @@ def run():
         x_factor = OFFSET_ALONG * math.cos(angle) - OFFSET_ACROSS * math.sin(angle)
         y_factor = OFFSET_ALONG * math.sin(angle) + OFFSET_ACROSS * math.cos(angle)
         
-        robotLocation = (update['fiducialLocation']) if not USE_UNDISTORT else [(
+        robotLocation = [(pt[0], pt[1]) for pt in update['fiducialLocation']] if not USE_UNDISTORT else [(
           int((float(pt[0]-w/2) / Sf + x_factor) * Sr + w/2), 
           int((float(pt[1]-h/2) / Sf + y_factor) * Sr + h/2)
         ) for pt in update['fiducialLocation'] ] 
