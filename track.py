@@ -7,7 +7,7 @@ import math
 import logging
 logging.basicConfig()
 
-MAX_BOTS=5
+MAX_BOTS=10
 
 # url = "udp://localhost:2000"
 # cap = cv2.VideoCapture(url)
@@ -49,6 +49,16 @@ camera_matrix = np.array([
   [0.0, 900, 539.5],
   [0.0, 0.0, 1.0]])
 dist_coeffs = np.array([[-0.25, 0.06, 0, 0, 0]])
+
+def undistort(w, h, pt):
+  k1, k2, p1, p2, k3 = dist_coeffs[0]
+  x, y = pt
+  r = dist(pt, [w/2,h/2])
+  radial_factor = (1 + k1*r**2 + k2*r**4 + k3*r**6) 
+  return [
+    x * radial_factor + 2*p1*x*y + p2*(r**2 + 2*x**2),
+    y * radial_factor + 2*p1*(r**2+ + 2*y**2) + 2*p2*x*y
+  ]
 
 def run():
   cv2.namedWindow('frame', cv2.WINDOW_NORMAL)
