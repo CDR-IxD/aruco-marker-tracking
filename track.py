@@ -10,6 +10,7 @@ import logging
 logging.basicConfig()
 
 MAX_BOTS=10
+SHOW_PREVIEW = True
 
 if len(sys.argv) >= 2:
   url = sys.argv[1] # "udp://localhost:2000"
@@ -145,15 +146,16 @@ def run():
         ws.send(json.dumps(data))
       
 
-    # # Display the resulting frame
-    # cv2.imshow('frame',gray)
-    #
-    # if cv2.waitKey(1) & 0xFF == ord('q'):
-    #   # When everything done, release the capture
-    #   cap.release()
-    #   cv2.destroyAllWindows()
-    #   import sys
-    #   sys.exit()
+    if SHOW_PREVIEW:
+    # Display the resulting frame
+      cv2.imshow('frame',gray)
+
+      if cv2.waitKey(1) & 0xFF == ord('q'):
+        # When everything done, release the capture
+        cap.release()
+        cv2.destroyAllWindows()
+        import sys
+        sys.exit()
   
 
 def on_message(ws, message):
