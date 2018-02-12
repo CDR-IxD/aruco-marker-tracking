@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import cv2
 import json
@@ -9,9 +11,12 @@ logging.basicConfig()
 
 MAX_BOTS=10
 
-# url = "udp://localhost:2000"
-# cap = cv2.VideoCapture(url)
-cap = cv2.VideoCapture(0)
+if len(sys.argv) >= 2:
+  url = sys.argv[1] # "udp://localhost:2000"
+  print("connecting to", url)
+  cap = cv2.VideoCapture(url)
+else:
+  cap = cv2.VideoCapture(0)
 cap.set(3, 1920)
 cap.set(4, 1080)
 
@@ -26,6 +31,7 @@ OFFSET_ALONG = 0 #-279 #169
 OFFSET_ACROSS = 0 #-190 #253
 
 floor_scale = 1
+ever_seen_floor = False
 
 # dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_1000)
 # dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_50)
@@ -77,7 +83,7 @@ def run():
     # Our operations on the frame come here
     gray_d = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray = cv2.undistort(gray_d, camera_matrix, dist_coeffs) if USE_UNDISTORT else gray_d
-    
+        
     res = cv2.aruco.detectMarkers(gray,dictionary)
     # print(res[0],res[1],len(res[2]))
     
@@ -93,7 +99,10 @@ def run():
       for (fids, index) in zip(res[0], res[1]):
         fid = fids[0]
         if int(index[0]) == 0: # floor fiducial!
-          # print("found floor!")
+          global ever_seen_floor
+          if not ever_seen_floor:
+            print("found floor!")
+            ever_seen_floor = True
           d = sum([dist(fid[a], fid[b]) for (a, b) in zip((0,1,2,3), (1,2,3,0))])/4 # average of all four edge lengths
           global floor_scale
           floor_scale = d / FLOOR_FIDUCIAL_EDGE_SIZE
@@ -136,15 +145,15 @@ def run():
         ws.send(json.dumps(data))
       
 
-    # Display the resulting frame
-    cv2.imshow('frame',gray)
-    # print("shown!")
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-      # When everything done, release the capture
-      cap.release()
-      cv2.destroyAllWindows()
-      import sys
-      sys.exit()
+    # # Display the resulting frame
+    # cv2.imshow('frame',gray)
+    #
+    # if cv2.waitKey(1) & 0xFF == ord('q'):
+    #   # When everything done, release the capture
+    #   cap.release()
+    #   cv2.destroyAllWindows()
+    #   import sys
+    #   sys.exit()
   
 
 def on_message(ws, message):
